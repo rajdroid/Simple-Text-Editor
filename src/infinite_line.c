@@ -2,15 +2,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <ncurses.h>
+
 typedef struct
 {
     unsigned int len;
     char *line;
 } LINE;
 
-LINE* read_line(FILE *fp)
+LINE* read_line()
 {
     unsigned int buf_size = 5;
+    int y, x;                       // cordinates
 
     char *line = (char *)malloc(sizeof(char) * buf_size);
     if (!line) return NULL;
@@ -20,14 +23,27 @@ LINE* read_line(FILE *fp)
     while (1)
     {
         int ch;
-        ch = fgetc(stdin);
+        ch = getch();
+
         if (ch == EOF || ch == '\n')
         {
             line[line_index] = '\0';
+            printw("\n");
             break;
+        }
+        else if (ch == KEY_LEFT)
+        {
+            getyx(stdscr, y, x);
+            move(y, x-1);
+        }
+        else if (ch == KEY_RIGHT)
+        {
+            getyx(stdscr, y, x);
+            move(y, x+1);
         }
         else
         {
+            printw("%c", ch);
             line[line_index] = ch;
         }
         line_index++;
@@ -38,6 +54,7 @@ LINE* read_line(FILE *fp)
             line = (char *)realloc(line, buf_size);
             if (!line) return NULL;
         }
+        refresh();
     }
 
     LINE *line_instance = (LINE *)malloc(sizeof(LINE));
@@ -51,13 +68,19 @@ LINE* read_line(FILE *fp)
 
 int main(int argc, char const *argv[])
 {
+    initscr();
+    raw();
+    keypad(stdscr, TRUE);
+    noecho();
+
     unsigned int no_lines = 5;
     LINE **lines = (LINE **)malloc(sizeof(LINE*) * no_lines);
     unsigned int lines_index = 0;
 
     while (1)
     {
-        LINE *line_instance = read_line(stdin);
+        printw("%2d ", lines_index);
+        LINE *line_instance = read_line();
         if (!line_instance) break;
 
         if (strcmp(line_instance->line, "exit") == 0)
@@ -76,10 +99,15 @@ int main(int argc, char const *argv[])
         }
     }
 
+    // for debugging purposes
     for (unsigned int i = 0; i < lines_index; ++i)
     {
-        printf("%s\n", lines[i]->line);
+        // printf("%s\n", lines[i]->line);
+        printw("%s\n", lines[i]->line);
+        refresh();
     }
+    getch();
+    endwin();
 
     return 0;
 }
