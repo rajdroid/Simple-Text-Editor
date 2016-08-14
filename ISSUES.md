@@ -1,6 +1,5 @@
 # What's not working
 
-+ up and down arrow not working.
 + editing not at end location does not shift characters at its right.
 + repaint does not consider terminal size.
 + no syntax highlighting.

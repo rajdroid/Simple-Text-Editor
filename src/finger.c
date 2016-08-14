@@ -24,10 +24,10 @@ void store_char(LINE **lines, char ch)
     POSITION curr_pos;
     getyx(stdscr, curr_pos.y, curr_pos.x);
 
-    /* each lines has corresponding buffer to store characters
-     * so we check if buffer already exists, if not than we allocate
-     * memory for it
-     */
+/*    each lines has corresponding buffer to store characters
+    so we check if buffer already exists, if not than we allocate
+    emory for it
+*/
     if (!lines[curr_pos.y])
     {
         lines[curr_pos.y] = (LINE *)malloc(sizeof(LINE));
@@ -94,7 +94,6 @@ int main(int argc, char const *argv[])
     {
         int ch = getch();
 
-        // unsigned int y, x;
         POSITION pos;
 
         // get current cursor position
@@ -111,7 +110,21 @@ int main(int argc, char const *argv[])
         else if (ch == KEY_RIGHT)
         {
             // move right if we already not at right most position
-            if (lines[pos.y]->line_len > pos.x) move(pos.y, pos.x+1);
+            if (lines[pos.y]->line_len > pos.x+1) move(pos.y, pos.x+1);
+            continue;
+        }
+        // if up arrow key is pressed move cursor one line up
+        else if (ch == KEY_UP)
+        {
+            // move up only if we are not at top most line
+            if (pos.y > 0) move(pos.y-1, pos.x);
+            continue;
+        }
+        // if down arrow key is pressed move cursor one line down
+        else if (ch == KEY_DOWN)
+        {
+            // move down only if we are not at last line
+            if (lines[pos.y+1] && lines[pos.y+1]->line) move(pos.y+1, pos.x);
             continue;
         }
         // if end key is pressed exit from editor
