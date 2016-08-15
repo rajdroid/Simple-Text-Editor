@@ -24,7 +24,7 @@ void store_char(LINE **lines, char ch)
     POSITION curr_pos;
     getyx(stdscr, curr_pos.y, curr_pos.x);
 
-/*    each lines has corresponding buffer to store characters
+/*  each lines has corresponding buffer to store characters
     so we check if buffer already exists, if not than we allocate
     emory for it
 */
@@ -38,19 +38,28 @@ void store_char(LINE **lines, char ch)
     }
 
     // if need to store more characters than previous allocation than realloc
-    if (lines[curr_pos.y]->line_capacity <= curr_pos.x)
+    if (lines[curr_pos.y]->line_capacity <= lines[curr_pos.y]->line_len)
     {
         lines[curr_pos.y]->line_capacity *= 2;
         lines[curr_pos.y]->line = (char *)realloc(lines[curr_pos.y]->line, lines[curr_pos.y]->line_capacity);
     }
 
-    // store character in buffer
-    lines[curr_pos.y]->line[curr_pos.x] = ch;
-
-    // increase the line_len variable
+    // store character at the end of line
     if (lines[curr_pos.y]->line_len < curr_pos.x + 1)
     {
         lines[curr_pos.y]->line_len = curr_pos.x + 1;
+        lines[curr_pos.y]->line[curr_pos.x] = ch;
+    }
+    // store character at the middle of the line
+    else
+    {
+        // shift all character upto current cursor position to right
+        for (unsigned int i = lines[curr_pos.y]->line_len; i > curr_pos.x; --i)
+        {
+            lines[curr_pos.y]->line[i] = lines[curr_pos.y]->line[i-1];
+        }
+        lines[curr_pos.y]->line[curr_pos.x] = ch;
+        lines[curr_pos.y]->line_len++;
     }
 
     return;
@@ -61,15 +70,26 @@ void repaint(LINE **lines)
     POSITION pos;
     getyx(stdscr, pos.y, pos.x);
 
-    // iterate on each line and print character upto current cursor
-    for (unsigned int i = 0; i <= pos.y; ++i)
+    // repaint current line
+    if (pos.x < lines[pos.y]->line_len-1)
     {
-        move(i, 0);
+        move(pos.y, 0);
+        for (unsigned int j = 0; j < lines[pos.y]->line_len; ++j)
+        {
+            printw("%c", lines[pos.y]->line[j]);
+        }
+        move(pos.y, pos.x+1);
+    }
+    // iterate on each line and print character upto current cursor
+    else
+    {
+        move(pos.y, 0);
         for (unsigned int j = 0; j <= pos.x; ++j)
         {
-            printw("%c", lines[i]->line[j]);
+            printw("%c", lines[pos.y]->line[j]);
         }
     }
+
     refresh();
 }
 
@@ -110,21 +130,31 @@ int main(int argc, char const *argv[])
         else if (ch == KEY_RIGHT)
         {
             // move right if we already not at right most position
-            if (lines[pos.y]->line_len > pos.x+1) move(pos.y, pos.x+1);
+            if (lines[pos.y]->line_len > pos.x) move(pos.y, pos.x+1);
             continue;
         }
         // if up arrow key is pressed move cursor one line up
         else if (ch == KEY_UP)
         {
             // move up only if we are not at top most line
-            if (pos.y > 0) move(pos.y-1, pos.x);
+            if (pos.y > 0)
+            {
+                // select min cursor position from line length and current cursor x cordinate
+                unsigned int loc = (lines[pos.y-1]->line_len < pos.x) ? lines[pos.y-1]->line_len : pos.x;
+                move(pos.y-1, loc);
+            }
             continue;
         }
         // if down arrow key is pressed move cursor one line down
         else if (ch == KEY_DOWN)
         {
             // move down only if we are not at last line
-            if (lines[pos.y+1] && lines[pos.y+1]->line) move(pos.y+1, pos.x);
+            if (lines[pos.y+1] && lines[pos.y+1]->line)
+            {
+                // select min cursor position from line length and current cursor x cordinate
+                unsigned int loc = (lines[pos.y+1]->line_len < pos.x) ? lines[pos.y+1]->line_len : pos.x;
+                move(pos.y+1, loc);
+            }
             continue;
         }
         // if end key is pressed exit from editor
